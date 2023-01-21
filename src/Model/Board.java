@@ -68,10 +68,7 @@ public class Board {
 	
 	public void move(int direction) {
 		
-		tilesInBoard.clear();
-		hasBoardChanged = false;
-		numberOfTilesRemoved = 0;
-		scoreChange = 0;
+		resetAttributes();
 		
 		int[] directionArray = DIRECTION_ARRAY[direction]; 
 		int iterator = (isDirectionOdd(direction)) ? -1 : 1; // 1
@@ -82,45 +79,12 @@ public class Board {
 				
 				if (board[rows][cols] != null) {
 
-					if (board[rows][cols].getFinalPosition() != null) {
-						board[rows][cols].setCurrentPosition(board[rows][cols].getFinalPosition());
-					}
+					resetTileCoords(rows, cols);
 					
 					board[rows][cols].clearRecentlySpanwed();
 					
-					while ( (!atBorder(direction, cols, rows)) 
-							&& board[rows + directionArray[1]][cols + directionArray[0]] == null) {
-						
-						board[rows + directionArray[1]][cols + directionArray[0]] = board[rows][cols];
-						board[rows][cols] = null;
-						
-						cols += directionArray[0];
-						rows += directionArray[1];
-						
-						hasBoardChanged = true;
-					}
-					
-					if (!atBorder(direction, cols, rows) 
-							&& board[rows][cols].getValue() == board[rows + directionArray[1]][cols + directionArray[0]].getValue() 
-							&& !board[rows + directionArray[1]][cols + directionArray[0]].getMerged()
-							&& !board[rows][cols].getMerged()) {
-						
-						board[rows + directionArray[1]][cols + directionArray[0]].combineValues();
-						board[rows + directionArray[1]][cols + directionArray[0]].setMerged();
-						
-						userScore += board[rows + directionArray[1]][cols + directionArray[0]].getValue();
-						scoreChange += board[rows + directionArray[1]][cols + directionArray[0]].getValue();
-						
-						board[rows][cols].setFinalPosition(new Coordinates(cols + directionArray[0], rows + directionArray[1]));
-						tilesInBoard.add(board[rows][cols]);
-						board[rows][cols] = null;
-						numberOfTilesRemoved++;
-						
-						hasBoardChanged = true;
-						
-					}
-					
-					
+					moveTiles(directionArray, direction, rows, cols);
+							
 				}
 
 					
@@ -135,6 +99,12 @@ public class Board {
 	}
 	
 	// --------------------- helper methods for move ---------------------
+	private void resetAttributes() {
+		tilesInBoard.clear();
+		hasBoardChanged = false;
+		numberOfTilesRemoved = 0;
+		scoreChange = 0;
+	}
 	private void clearMergeStates() {
 		for (int rows = 0; rows < DEFAULT_ROW_SIZE; rows++) {
 			for (int cols = 0; cols < DEFAULT_COL_SIZE; cols++) {
@@ -183,9 +153,52 @@ public class Board {
 		return borderChecker;
 		
 	}
+	private void resetTileCoords(int rows, int cols) {
+		if (board[rows][cols].getFinalPosition() != null) {
+			board[rows][cols].setCurrentPosition(board[rows][cols].getFinalPosition());
+		}
+	}
+	private void moveTiles(int[] directionArray, int direction, int rows, int cols) {
+		
+		while ( (!atBorder(direction, cols, rows)) 
+				&& board[rows + directionArray[1]][cols + directionArray[0]] == null) {
+			
+			board[rows + directionArray[1]][cols + directionArray[0]] = board[rows][cols];
+			board[rows][cols] = null;
+			
+			cols += directionArray[0];
+			rows += directionArray[1];
+			
+			hasBoardChanged = true;
+		}
+		
+		mergeTiles(directionArray, direction, rows, cols);
+		
+	}
+	private void mergeTiles(int[] directionArray, int direction, int rows, int cols) {
+		
+		if (!atBorder(direction, cols, rows) 
+				&& board[rows][cols].getValue() == board[rows + directionArray[1]][cols + directionArray[0]].getValue() 
+				&& !board[rows + directionArray[1]][cols + directionArray[0]].getMerged()
+				&& !board[rows][cols].getMerged()) {
+			
+			board[rows + directionArray[1]][cols + directionArray[0]].combineValues();
+			board[rows + directionArray[1]][cols + directionArray[0]].setMerged();
+			
+			userScore += board[rows + directionArray[1]][cols + directionArray[0]].getValue();
+			scoreChange += board[rows + directionArray[1]][cols + directionArray[0]].getValue();
+			
+			board[rows][cols].setFinalPosition(new Coordinates(cols + directionArray[0], rows + directionArray[1]));
+			tilesInBoard.add(board[rows][cols]);
+			board[rows][cols] = null;
+			numberOfTilesRemoved++;
+			
+			hasBoardChanged = true;
+			
+		}
+		
+	}
 	// --------------------- ENDING OF HELPER METHODS ---------------------
-	
-	
 	
 	private void spawnStartingTiles() {
 		for(int i = 0; i < TILES_AT_START; i++) {
